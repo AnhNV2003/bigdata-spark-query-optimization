@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+venv/
+.venv/
+
+# Notebook artifacts
+.ipynb_checkpoints/
+
+# Local editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Logs
+*.log
+
+# Large local data
+dataset/
+*.parquet
+*.csv
+*.orc
+*.avro
+
+# Local environment files
+.env
+.env.*
