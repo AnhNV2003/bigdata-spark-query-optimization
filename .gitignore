@@ -29,6 +29,17 @@ dataset/
 *.csv
 *.orc
 *.avro
+results/**
+!results/
+!results/.gitkeep
+!results/format/
+!results/format/.gitkeep
+!results/partition/
+!results/partition/.gitkeep
+!results/bucketing/
+!results/bucketing/.gitkeep
+!results/join_skew/
+!results/join_skew/.gitkeep
 
 # Local environment files
 .env
