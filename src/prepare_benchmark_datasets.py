@@ -5,6 +5,15 @@ from datetime import datetime
 
 from pyspark.sql import functions as F
 
+from project_config import (
+    DEFAULT_MINIO_ACCESS_KEY,
+    DEFAULT_MINIO_BUCKET,
+    DEFAULT_MINIO_ENDPOINT,
+    DEFAULT_MINIO_SECRET_KEY,
+    DEFAULT_SPARK_DRIVER_HOST,
+    DEFAULT_SPARK_MASTER,
+    DEFAULT_ZONE_LOOKUP_PATH,
+)
 from test_read_minio_parquet import build_spark_session
 from trajectory_utils import (
     build_s3_path,
@@ -18,7 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Prepare trajectory benchmark datasets in multiple formats and layouts."
     )
-    parser.add_argument("--source-bucket", default="taxi-data", help="Source MinIO bucket")
+    parser.add_argument("--source-bucket", default=DEFAULT_MINIO_BUCKET, help="Source MinIO bucket")
     parser.add_argument("--source-prefix", default="", help="Source object prefix")
     parser.add_argument(
         "--source-format",
@@ -26,7 +35,7 @@ def parse_args() -> argparse.Namespace:
         choices=["parquet", "orc", "avro"],
         help="Source dataset format",
     )
-    parser.add_argument("--target-bucket", default="taxi-data", help="Target MinIO bucket")
+    parser.add_argument("--target-bucket", default=DEFAULT_MINIO_BUCKET, help="Target MinIO bucket")
     parser.add_argument(
         "--target-prefix",
         default="bench",
@@ -34,15 +43,21 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--endpoint",
-        default="http://minio1:9000",
+        default=DEFAULT_MINIO_ENDPOINT,
         help="MinIO S3 endpoint visible from Spark",
     )
-    parser.add_argument("--access-key", default="minioadmin", help="MinIO access key")
-    parser.add_argument("--secret-key", default="minioadmin", help="MinIO secret key")
+    parser.add_argument("--access-key", default=DEFAULT_MINIO_ACCESS_KEY, help="MinIO access key")
+    parser.add_argument("--secret-key", default=DEFAULT_MINIO_SECRET_KEY, help="MinIO secret key")
+    parser.add_argument("--master", default=DEFAULT_SPARK_MASTER, help="Spark master URL")
+    parser.add_argument(
+        "--driver-host",
+        default=DEFAULT_SPARK_DRIVER_HOST,
+        help="Driver host/IP reachable from Spark workers",
+    )
     parser.add_argument(
         "--zone-lookup-path",
-        default="/workspace/reference/taxi_zone_lookup.csv",
-        help="Path to the taxi zone lookup CSV inside the Spark container",
+        default=DEFAULT_ZONE_LOOKUP_PATH,
+        help="Path to the taxi zone lookup CSV on the driver host",
     )
     parser.add_argument(
         "--bucket-count",
@@ -64,12 +79,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--window-start",
-        default="2024-01-01 00:00:00",
+        default="2025-01-01 00:00:00",
         help="Only prepare source year/month folders that overlap this window start",
     )
     parser.add_argument(
         "--window-end",
-        default="2024-02-01 00:00:00",
+        default="2026-01-01 00:00:00",
         help="Only prepare source year/month folders that overlap this window end",
     )
     return parser.parse_args()
@@ -185,6 +200,8 @@ def main() -> None:
         endpoint=args.endpoint,
         access_key=args.access_key,
         secret_key=args.secret_key,
+        master=args.master,
+        driver_host=args.driver_host,
     )
     spark.sparkContext.setLogLevel("ERROR")
 

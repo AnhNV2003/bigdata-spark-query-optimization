@@ -4,6 +4,14 @@ import argparse
 
 from pyspark.sql.functions import col, count, when
 
+from project_config import (
+    DEFAULT_MINIO_ACCESS_KEY,
+    DEFAULT_MINIO_BUCKET,
+    DEFAULT_MINIO_ENDPOINT,
+    DEFAULT_MINIO_SECRET_KEY,
+    DEFAULT_SPARK_DRIVER_HOST,
+    DEFAULT_SPARK_MASTER,
+)
 from test_read_minio_parquet import build_spark_session
 
 
@@ -11,7 +19,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compute full-dataset null ratios for selected columns in parquet stored on MinIO."
     )
-    parser.add_argument("--bucket", default="taxi-data", help="MinIO bucket name")
+    parser.add_argument("--bucket", default=DEFAULT_MINIO_BUCKET, help="MinIO bucket name")
     parser.add_argument(
         "--prefix",
         default="",
@@ -19,11 +27,17 @@ def main() -> None:
     )
     parser.add_argument(
         "--endpoint",
-        default="http://minio1:9000",
+        default=DEFAULT_MINIO_ENDPOINT,
         help="MinIO S3 endpoint visible from Spark",
     )
-    parser.add_argument("--access-key", default="minioadmin", help="MinIO access key")
-    parser.add_argument("--secret-key", default="minioadmin", help="MinIO secret key")
+    parser.add_argument("--access-key", default=DEFAULT_MINIO_ACCESS_KEY, help="MinIO access key")
+    parser.add_argument("--secret-key", default=DEFAULT_MINIO_SECRET_KEY, help="MinIO secret key")
+    parser.add_argument("--master", default=DEFAULT_SPARK_MASTER, help="Spark master URL")
+    parser.add_argument(
+        "--driver-host",
+        default=DEFAULT_SPARK_DRIVER_HOST,
+        help="Driver host/IP reachable from Spark workers",
+    )
     parser.add_argument(
         "--columns",
         nargs="+",
@@ -37,6 +51,8 @@ def main() -> None:
         endpoint=args.endpoint,
         access_key=args.access_key,
         secret_key=args.secret_key,
+        master=args.master,
+        driver_host=args.driver_host,
     )
     spark.sparkContext.setLogLevel("ERROR")
 

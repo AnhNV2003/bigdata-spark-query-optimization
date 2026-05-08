@@ -4,6 +4,14 @@ import argparse
 
 from pyspark.sql import DataFrame, SparkSession
 
+from project_config import (
+    DEFAULT_MINIO_ACCESS_KEY,
+    DEFAULT_MINIO_BUCKET,
+    DEFAULT_MINIO_ENDPOINT,
+    DEFAULT_MINIO_SECRET_KEY,
+    DEFAULT_SPARK_DRIVER_HOST,
+    DEFAULT_SPARK_MASTER,
+)
 from test_read_minio_parquet import build_spark_session
 from trajectory_utils import load_trajectory_df
 
@@ -12,16 +20,16 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build a reusable normalized trips_clean cache for notebooks."
     )
-    parser.add_argument("--bucket", default="taxi-data", help="MinIO bucket name")
+    parser.add_argument("--bucket", default=DEFAULT_MINIO_BUCKET, help="MinIO bucket name")
     parser.add_argument(
         "--prefixes",
         nargs="+",
-        default=["2021", "2022", "2023", "2024", "2025"],
+        default=["2025"],
         help="Raw source prefixes to normalize",
     )
     parser.add_argument(
         "--cache-prefix",
-        default="notebook_cache/trips_clean_2021_2025",
+        default="notebook_cache/trips_clean_2025",
         help="Destination prefix for the normalized cache",
     )
     parser.add_argument(
@@ -32,16 +40,21 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--endpoint",
-        default="http://minio1:9000",
+        default=DEFAULT_MINIO_ENDPOINT,
         help="MinIO endpoint visible from Spark",
     )
     parser.add_argument(
         "--master",
-        default="spark://spark-master:7077",
+        default=DEFAULT_SPARK_MASTER,
         help="Spark master URL",
     )
-    parser.add_argument("--access-key", default="minioadmin", help="MinIO access key")
-    parser.add_argument("--secret-key", default="minioadmin", help="MinIO secret key")
+    parser.add_argument("--access-key", default=DEFAULT_MINIO_ACCESS_KEY, help="MinIO access key")
+    parser.add_argument("--secret-key", default=DEFAULT_MINIO_SECRET_KEY, help="MinIO secret key")
+    parser.add_argument(
+        "--driver-host",
+        default=DEFAULT_SPARK_DRIVER_HOST,
+        help="Driver host/IP reachable from Spark workers",
+    )
     parser.add_argument(
         "--refresh",
         action="store_true",
@@ -75,6 +88,7 @@ def main() -> None:
         secret_key=args.secret_key,
         app_name="build-notebook-cache",
         master=args.master,
+        driver_host=args.driver_host,
     )
     spark.sparkContext.setLogLevel("ERROR")
 

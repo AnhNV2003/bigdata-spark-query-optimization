@@ -6,12 +6,15 @@ ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV PYSPARK_SUBMIT_ARGS="--packages org.apache.hadoop:hadoop-aws:3.4.1,software.amazon.awssdk:bundle:2.24.6,org.apache.spark:spark-avro_2.13:4.0.1 --conf spark.jars.ivy=/home/jovyan/.ivy2 pyspark-shell"
+ARG NB_UID=1005
+ARG NB_GID=1005
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openjdk-21-jre-headless tini \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash jovyan
+RUN groupadd --gid "${NB_GID}" jovyan \
+    && useradd --uid "${NB_UID}" --gid "${NB_GID}" -m -s /bin/bash jovyan
 
 RUN pip install \
     ipykernel \

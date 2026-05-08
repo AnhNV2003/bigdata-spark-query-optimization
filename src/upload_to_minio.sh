@@ -1,9 +1,8 @@
-python3 /home/vanh/data/projects/bigdata/src/upload_to_minio.py \
-  --source-dir /home/vanh/data/projects/bigdata/dataset/parquet \
+python3 ./src/upload_to_minio.py \
   --bucket taxi-data \
-  --recursive \
-  --from-year 2021 \
+  --endpoint http://localhost:9000 \
+  --from-year 2020 \
   --from-month 1 \
   --to-year 2025 \
-  --to-month 11 \
+  --to-month 12 \
   --skip-existing

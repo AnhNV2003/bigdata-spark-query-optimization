@@ -8,9 +8,20 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import requests as http_requests
 from pyspark.sql import SparkSession
 
 from benchmark_definitions import ALL_QUERY_IDS, QUERY_GROUPS, QUERY_MAP
+from project_config import (
+    DEFAULT_MINIO_ACCESS_KEY,
+    DEFAULT_MINIO_BUCKET,
+    DEFAULT_MINIO_ENDPOINT,
+    DEFAULT_MINIO_SECRET_KEY,
+    DEFAULT_RESULTS_ROOT,
+    DEFAULT_SPARK_DRIVER_HOST,
+    DEFAULT_SPARK_MASTER,
+    DEFAULT_ZONE_LOOKUP_PATH,
+)
 from test_read_minio_parquet import build_spark_session
 from trajectory_utils import (
     DEFAULT_BUCKET_COUNT,
@@ -25,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run trajectory benchmark queries and export results to CSV."
     )
-    parser.add_argument("--bucket", default="taxi-data", help="MinIO bucket name")
+    parser.add_argument("--bucket", default=DEFAULT_MINIO_BUCKET, help="MinIO bucket name")
     parser.add_argument("--prefix", default="", help="Object prefix inside the bucket")
     parser.add_argument(
         "--source-format",
@@ -35,11 +46,17 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--endpoint",
-        default="http://minio1:9000",
+        default=DEFAULT_MINIO_ENDPOINT,
         help="MinIO S3 endpoint visible from Spark",
     )
-    parser.add_argument("--access-key", default="minioadmin", help="MinIO access key")
-    parser.add_argument("--secret-key", default="minioadmin", help="MinIO secret key")
+    parser.add_argument("--access-key", default=DEFAULT_MINIO_ACCESS_KEY, help="MinIO access key")
+    parser.add_argument("--secret-key", default=DEFAULT_MINIO_SECRET_KEY, help="MinIO secret key")
+    parser.add_argument("--master", default=DEFAULT_SPARK_MASTER, help="Spark master URL")
+    parser.add_argument(
+        "--driver-host",
+        default=DEFAULT_SPARK_DRIVER_HOST,
+        help="Driver host/IP reachable from Spark workers",
+    )
     parser.add_argument(
         "--query-ids",
         nargs="+",
@@ -58,18 +75,18 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--window-start",
-        default="2024-01-01 00:00:00",
+        default="2025-01-01 00:00:00",
         help="Benchmark time window start timestamp",
     )
     parser.add_argument(
         "--window-end",
-        default="2024-02-01 00:00:00",
+        default="2026-01-01 00:00:00",
         help="Benchmark time window end timestamp",
     )
     parser.add_argument(
         "--zone-lookup-path",
-        default="/workspace/reference/taxi_zone_lookup.csv",
-        help="Path to the taxi zone lookup CSV inside the Spark container",
+        default=DEFAULT_ZONE_LOOKUP_PATH,
+        help="Path to the taxi zone lookup CSV on the driver host",
     )
     parser.add_argument(
         "--bucket-count",
@@ -107,8 +124,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output",
-        default="/workspace/results/benchmark_runs.csv",
-        help="Output CSV path visible inside the Spark container",
+        default=str(DEFAULT_RESULTS_ROOT / "benchmark_runs.csv"),
+        help="Output CSV path on the driver host",
     )
     parser.add_argument(
         "--merge-schema",
@@ -164,6 +181,51 @@ def stage_task_summary(spark: SparkSession, job_group: str) -> tuple[int, int]:
     return len(stage_ids), total_tasks
 
 
+def collect_stage_metrics(
+    spark: SparkSession,
+    job_group: str,
+) -> dict[str, object]:
+    tracker = spark.sparkContext.statusTracker()
+    job_ids = tracker.getJobIdsForGroup(job_group)
+    stage_ids: set[int] = set()
+    for job_id in job_ids:
+        job_info = tracker.getJobInfo(job_id)
+        if not job_info:
+            continue
+        for stage_id in job_info.stageIds:
+            stage_ids.add(stage_id)
+
+    if not stage_ids:
+        return {"shuffle_read_mb": 0.0, "shuffle_write_mb": 0.0, "spill_mb": 0.0}
+
+    ui_url = spark.sparkContext.uiWebUrl or "http://localhost:4040"
+    app_id = spark.sparkContext.applicationId
+    shuffle_read = 0
+    shuffle_write = 0
+    spill = 0
+
+    try:
+        resp = http_requests.get(
+            f"{ui_url}/api/v1/applications/{app_id}/stages",
+            timeout=10,
+        )
+        resp.raise_for_status()
+        for stage in resp.json():
+            if stage.get("stageId") in stage_ids and stage.get("status") == "COMPLETE":
+                shuffle_read += stage.get("shuffleReadBytes", 0)
+                shuffle_write += stage.get("shuffleWriteBytes", 0)
+                spill += stage.get("memoryBytesSpilled", 0)
+                spill += stage.get("diskBytesSpilled", 0)
+    except Exception:
+        pass
+
+    return {
+        "shuffle_read_mb": round(shuffle_read / (1024 * 1024), 2),
+        "shuffle_write_mb": round(shuffle_write / (1024 * 1024), 2),
+        "spill_mb": round(spill / (1024 * 1024), 2),
+    }
+
+
 def run_query_once(
     spark: SparkSession,
     query_id: str,
@@ -178,11 +240,15 @@ def run_query_once(
     runtime_sec = time.perf_counter() - started
 
     stages, tasks = stage_task_summary(spark, job_group)
+    metrics = collect_stage_metrics(spark, job_group)
     return {
         "runtime_sec": round(runtime_sec, 6),
         "rows_returned": rows_returned,
         "stages": stages,
         "tasks": tasks,
+        "shuffle_read_mb": metrics["shuffle_read_mb"],
+        "shuffle_write_mb": metrics["shuffle_write_mb"],
+        "spill_mb": metrics["spill_mb"],
     }
 
 
@@ -294,6 +360,8 @@ def main() -> None:
         endpoint=args.endpoint,
         access_key=args.access_key,
         secret_key=args.secret_key,
+        master=args.master,
+        driver_host=args.driver_host,
     )
     spark.sparkContext.setLogLevel("ERROR")
 
@@ -414,9 +482,9 @@ def main() -> None:
                     "tasks": run_result["tasks"],
                     "median_runtime_sec": median_runtime,
                     "best_runtime_sec": best_runtime,
-                    "shuffle_read_mb": "",
-                    "shuffle_write_mb": "",
-                    "spill_mb": "",
+                    "shuffle_read_mb": run_result["shuffle_read_mb"],
+                    "shuffle_write_mb": run_result["shuffle_write_mb"],
+                    "spill_mb": run_result["spill_mb"],
                     "partitions_scanned": "",
                     "uses_broadcast_join": plan_hints["uses_broadcast_join"],
                     "uses_partition_pruning": plan_hints["uses_partition_pruning"],

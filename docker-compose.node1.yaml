@@ -1,0 +1,140 @@
+name: bigdata-node1
+
+services:
+# --------- Query Engine ---------
+  spark-master:
+    image: spark:4.0.1-python3
+    container_name: spark-master
+    network_mode: host
+    restart: always
+    environment:
+      SPARK_MASTER_HOST: "100.127.42.127"
+      SPARK_MASTER_PORT: "7077"
+      SPARK_MASTER_WEBUI_PORT: "8080"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    command: bash -c "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
+    volumes:
+      - ./service/spark-master/local:/spark-local
+      - ./service/spark-master/logs:/spark-logs
+
+  spark-worker-1:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-1
+    network_mode: host
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_WORKER_HOST: "100.127.42.127"
+      SPARK_WORKER_PORT: "7081"
+      SPARK_WORKER_WEBUI_PORT: "8081"
+      SPARK_WORKER_CORES: "12"
+      SPARK_WORKER_MEMORY: "24G"
+      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
+    volumes:
+      - ./service/spark-worker-1/local:/spark-local
+      - ./service/spark-worker-1/logs:/spark-logs
+    restart: always
+
+  spark-worker-2:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-2
+    network_mode: host
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_WORKER_HOST: "100.127.42.127"
+      SPARK_WORKER_PORT: "7082"
+      SPARK_WORKER_WEBUI_PORT: "8082"
+      SPARK_WORKER_CORES: "12"
+      SPARK_WORKER_MEMORY: "24G"
+      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
+    volumes:
+      - ./service/spark-worker-2/local:/spark-local
+      - ./service/spark-worker-2/logs:/spark-logs
+    restart: always
+
+  spark-worker-3:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-3
+    network_mode: host
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_WORKER_HOST: "100.127.42.127"
+      SPARK_WORKER_PORT: "7083"
+      SPARK_WORKER_WEBUI_PORT: "8083"
+      SPARK_WORKER_CORES: "12"
+      SPARK_WORKER_MEMORY: "24G"
+      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
+    volumes:
+      - ./service/spark-worker-3/local:/spark-local
+      - ./service/spark-worker-3/logs:/spark-logs
+    restart: always
+
+  spark-worker-4:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-4
+    network_mode: host
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_WORKER_HOST: "100.127.42.127"
+      SPARK_WORKER_PORT: "7084"
+      SPARK_WORKER_WEBUI_PORT: "8084"
+      SPARK_WORKER_CORES: "12"
+      SPARK_WORKER_MEMORY: "24G"
+      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
+    volumes:
+      - ./service/spark-worker-4/local:/spark-local
+      - ./service/spark-worker-4/logs:/spark-logs
+    restart: always
+
+# --------- Storage ---------
+  minio1:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: minio1
+    network_mode: host
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_VOLUMES: >-
+        http://100.127.42.127:9000/data1
+        http://100.127.42.127:9000/data2
+        http://100.127.42.127:9002/data1
+        http://100.127.42.127:9002/data2
+    command: server --address :9000 --console-address :9001
+    volumes:
+      - ./service/minio1/data1:/data1
+      - ./service/minio1/data2:/data2
+    restart: always
+
+  minio2:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: minio2
+    network_mode: host
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_VOLUMES: >-
+        http://100.127.42.127:9000/data1
+        http://100.127.42.127:9000/data2
+        http://100.127.42.127:9002/data1
+        http://100.127.42.127:9002/data2
+    command: server --address :9002 --console-address :9003
+    volumes:
+      - ./service/minio2/data1:/data1
+      - ./service/minio2/data2:/data2
+    restart: always

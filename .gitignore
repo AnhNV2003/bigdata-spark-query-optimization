@@ -25,6 +25,13 @@ venv/
 
 # Large local data
 dataset/
+service/spark-*/
+service/spark-ivy/
+service/jupyter/
+service/minio1/
+service/minio2/
+service/minio-standalone/
+service/minio-nginx/
 *.parquet
 *.csv
 *.orc
@@ -40,6 +47,9 @@ results/**
 !results/bucketing/.gitkeep
 !results/join_skew/
 !results/join_skew/.gitkeep
+
+# Claude Code working directory
+.claude/
 
 # Local environment files
 .env

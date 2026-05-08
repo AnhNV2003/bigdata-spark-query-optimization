@@ -1,16 +1,23 @@
+import argparse
 import time
 from pathlib import Path
 
 import requests
 
+from project_config import PROJECT_ROOT
+
 BASE_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data"
 
-DATASET_TYPE = "yellow"  # đổi thành green / fhv / hvfhv nếu muốn
-YEARS = range(2009, 2026)
-MONTHS = range(1, 13)
 
-OUTPUT_DIR = Path("/home/vanh/data/projects/bigdata/dataset/parquet")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Download NYC taxi parquet data.")
+    parser.add_argument("--dataset-type", default="yellow", choices=["yellow", "green", "fhv", "hvfhv"])
+    parser.add_argument("--from-year", type=int, default=2025)
+    parser.add_argument("--to-year", type=int, default=2025)
+    parser.add_argument("--from-month", type=int, default=1)
+    parser.add_argument("--to-month", type=int, default=12)
+    parser.add_argument("--output-dir", default=str(PROJECT_ROOT / "dataset/parquet"))
+    return parser.parse_args()
 
 
 def download_file(url: str, path: Path, retries: int = 3) -> bool:
@@ -33,23 +40,35 @@ def download_file(url: str, path: Path, retries: int = 3) -> bool:
     return False
 
 
-for year in YEARS:
-    for month in MONTHS:
-        mm = f"{month:02d}"
-        filename = f"{DATASET_TYPE}_tripdata_{year}-{mm}.parquet"
-        url = f"{BASE_URL}/{filename}"
-        month_dir = OUTPUT_DIR / str(year) / mm
-        month_dir.mkdir(parents=True, exist_ok=True)
-        filepath = month_dir / filename
+def main() -> None:
+    args = parse_args()
+    output_dir = Path(args.output_dir).expanduser().resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-        if filepath.exists():
-            print(f"Skip (exists): {filename}")
-            continue
+    for year in range(args.from_year, args.to_year + 1):
+        start_month = args.from_month if year == args.from_year else 1
+        end_month = args.to_month if year == args.to_year else 12
 
-        print(f"Downloading: {filename}")
-        success = download_file(url, filepath)
+        for month in range(start_month, end_month + 1):
+            mm = f"{month:02d}"
+            filename = f"{args.dataset_type}_tripdata_{year}-{mm}.parquet"
+            url = f"{BASE_URL}/{filename}"
+            month_dir = output_dir / str(year) / mm
+            month_dir.mkdir(parents=True, exist_ok=True)
+            filepath = month_dir / filename
 
-        if success:
-            print(f"Done: {filename}")
-        else:
-            print(f"Failed: {filename}")
+            if filepath.exists():
+                print(f"Skip (exists): {filename}")
+                continue
+
+            print(f"Downloading: {filename}")
+            success = download_file(url, filepath)
+
+            if success:
+                print(f"Done: {filename}")
+            else:
+                print(f"Failed: {filename}")
+
+
+if __name__ == "__main__":
+    main()

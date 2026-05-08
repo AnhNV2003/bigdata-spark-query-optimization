@@ -20,6 +20,10 @@ PAYMENT_DIM_ROWS = [
 DEFAULT_BUCKET_COUNT = 16
 
 
+def _sql_string_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
 def build_s3_path(bucket: str, prefix: str) -> str:
     clean_prefix = prefix.strip("/")
     return f"s3a://{bucket}/{clean_prefix}" if clean_prefix else f"s3a://{bucket}/"
@@ -282,7 +286,10 @@ def normalize_trajectory_df(df: DataFrame) -> DataFrame:
     return trajectory_df
 
 
-def add_bucket_layout_columns(df: DataFrame, bucket_count: int = DEFAULT_BUCKET_COUNT) -> DataFrame:
+def add_bucket_layout_columns(
+    df: DataFrame, 
+    bucket_count: int = DEFAULT_BUCKET_COUNT
+) -> DataFrame:
     if "origin_zone_bucket" in df.columns:
         return df
 
@@ -355,11 +362,18 @@ def register_trajectory_view(
 
 
 def register_payment_dim_view(spark: SparkSession) -> None:
-    payment_dim_df = spark.createDataFrame(
-        PAYMENT_DIM_ROWS,
-        ["payment_type_norm", "payment_description"],
+    values_sql = ",\n        ".join(
+        f"({_sql_string_literal(payment_type)}, {_sql_string_literal(description)})"
+        for payment_type, description in PAYMENT_DIM_ROWS
     )
-    payment_dim_df.createOrReplaceTempView("payment_type_dim")
+    spark.sql(
+        f"""
+        CREATE OR REPLACE TEMP VIEW payment_type_dim
+            (payment_type_norm, payment_description)
+        AS VALUES
+        {values_sql}
+        """
+    )
 
 
 def register_taxi_zone_dim_view(spark: SparkSession, zone_lookup_path: str) -> None:
@@ -370,9 +384,9 @@ def register_taxi_zone_dim_view(spark: SparkSession, zone_lookup_path: str) -> N
             "Mount the reference data or provide a valid path."
         )
 
-    # Load the small reference CSV on the driver first, then create a Spark
-    # DataFrame. This avoids executor-side file path mismatches between the
-    # Jupyter container and the Spark worker containers.
+    # Load the small reference CSV on the driver first, then register it with a
+    # SQL VALUES view. This avoids executor-side file path mismatches and avoids
+    # Python worker version mismatches when notebooks run from the host venv.
     with path.open("r", encoding="utf-8", newline="") as csv_file:
         reader = csv.DictReader(csv_file)
         rows = [
@@ -385,11 +399,23 @@ def register_taxi_zone_dim_view(spark: SparkSession, zone_lookup_path: str) -> N
             for row in reader
         ]
 
-    zone_dim_df = spark.createDataFrame(
-        rows,
-        ["location_id", "borough", "zone", "service_zone"],
+    values_sql = ",\n        ".join(
+        "("
+        f"{location_id}, "
+        f"{_sql_string_literal(borough)}, "
+        f"{_sql_string_literal(zone)}, "
+        f"{_sql_string_literal(service_zone)}"
+        ")"
+        for location_id, borough, zone, service_zone in rows
     )
-    zone_dim_df.createOrReplaceTempView("taxi_zone_dim")
+    spark.sql(
+        f"""
+        CREATE OR REPLACE TEMP VIEW taxi_zone_dim
+            (location_id, borough, zone, service_zone)
+        AS VALUES
+        {values_sql}
+        """
+    )
 
 
 def register_supporting_views(spark: SparkSession, zone_lookup_path: str) -> None:

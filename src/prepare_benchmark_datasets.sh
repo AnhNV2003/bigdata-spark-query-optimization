@@ -1,22 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WINDOW_START="${WINDOW_START:-2024-01-01 00:00:00}"
-WINDOW_END="${WINDOW_END:-2024-02-01 00:00:00}"
+PROJECT_ROOT="${PROJECT_ROOT:-/home/phd/bigdata-spark-query-optimization}"
+PYTHON_BIN="${PYTHON_BIN:-$PROJECT_ROOT/venv/bin/python}"
+if [ ! -x "$PYTHON_BIN" ]; then
+  PYTHON_BIN="${PYTHON_BIN_FALLBACK:-python3.12}"
+fi
+if [ -z "${JAVA_HOME:-}" ] && [ -x "$HOME/.local/share/jdks/temurin-21/bin/java" ]; then
+  export JAVA_HOME="$HOME/.local/share/jdks/temurin-21"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
 
-docker compose -f /home/vanh/data/projects/bigdata/docker-compose.yaml exec spark-master \
-  /opt/spark/bin/spark-submit \
-  --master spark://spark-master:7077 \
-  --conf spark.jars.ivy=/tmp/ivy \
-  --conf spark.ui.showConsoleProgress=false \
-  --packages org.apache.hadoop:hadoop-aws:3.4.1,software.amazon.awssdk:bundle:2.24.6,org.apache.spark:spark-avro_2.13:4.0.1 \
-  /workspace/src/prepare_benchmark_datasets.py \
-  --source-bucket taxi-data \
-  --source-prefix '' \
-  --source-format parquet \
-  --target-bucket taxi-data \
-  --target-prefix bench \
-  --zone-lookup-path /workspace/reference/taxi_zone_lookup.csv \
-  --window-start "$WINDOW_START" \
-  --window-end "$WINDOW_END" \
+export PYTHONPATH="$PROJECT_ROOT/src:${PYTHONPATH:-}"
+
+"$PYTHON_BIN" "$PROJECT_ROOT/src/prepare_benchmark_datasets.py" \
+  --source-bucket "${MINIO_BUCKET:-taxi-data}" \
+  --source-prefix "${SOURCE_PREFIX:-}" \
+  --source-format "${SOURCE_FORMAT:-parquet}" \
+  --target-bucket "${MINIO_BUCKET:-taxi-data}" \
+  --target-prefix "${TARGET_PREFIX:-bench}" \
+  --endpoint "${MINIO_ENDPOINT:-http://100.127.42.127:9100}" \
+  --master "${SPARK_MASTER:-spark://100.127.42.127:7077}" \
+  --driver-host "${SPARK_DRIVER_HOST:-100.127.42.127}" \
+  --zone-lookup-path "${ZONE_LOOKUP_PATH:-$PROJECT_ROOT/dataset/reference/taxi_zone_lookup.csv}" \
+  --window-start "${WINDOW_START:-2025-01-01 00:00:00}" \
+  --window-end "${WINDOW_END:-2026-01-01 00:00:00}" \
   --merge-schema

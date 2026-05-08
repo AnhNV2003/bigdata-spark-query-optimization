@@ -1,131 +1,151 @@
-name: bigdata-spark
+name: bigdata-spark-node1
 
 services:
   spark-master:
     image: spark:4.0.1-python3
     container_name: spark-master
-    hostname: spark-master
+    network_mode: host
     command:
       - /bin/bash
       - -lc
       - |
-        /opt/spark/sbin/start-master.sh
+        /opt/spark/sbin/start-master.sh \
+          --host 100.127.42.127 \
+          --port 7077 \
+          --webui-port 8080
         tail -f /dev/null
     environment:
-      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_HOST: "100.127.42.127"
       SPARK_MASTER_PORT: "7077"
       SPARK_MASTER_WEBUI_PORT: "8080"
-      SPARK_LOCAL_DIRS: /tmp/spark-local
-    ports:
-      - "7077:7077"
-      - "8080:8080"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
     volumes:
-      - .:/workspace
-      - ./dataset/reference:/workspace/reference:ro
-    working_dir: /workspace
+      - ./service/spark-master/local:/spark-local
+      - ./service/spark-master/logs:/spark-logs
+    restart: unless-stopped
 
-  spark-worker:
+  spark-worker-1:
     image: spark:4.0.1-python3
-    container_name: spark-worker
-    hostname: spark-worker
+    container_name: spark-worker-1
+    network_mode: host
     depends_on:
       - spark-master
     command:
       - /bin/bash
       - -lc
       - |
-        /opt/spark/sbin/start-worker.sh spark://spark-master:7077
+        /opt/spark/sbin/start-worker.sh \
+          --host 100.127.42.127 \
+          --port 7081 \
+          --webui-port 8081 \
+          -c 12 \
+          -m 24G \
+          spark://100.127.42.127:7077
         tail -f /dev/null
     environment:
-      SPARK_WORKER_CORES: "4"
-      SPARK_WORKER_MEMORY: "4g"
-      SPARK_WORKER_WEBUI_PORT: "8081"
-      SPARK_LOCAL_DIRS: /tmp/spark-local
-    ports:
-      - "8081:8081"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
     volumes:
-      - .:/workspace
-      - ./dataset/reference:/workspace/reference:ro
-    working_dir: /workspace
+      - ./service/spark-worker-1/local:/spark-local
+      - ./service/spark-worker-1/logs:/spark-logs
+    restart: unless-stopped
 
   spark-worker-2:
     image: spark:4.0.1-python3
     container_name: spark-worker-2
-    hostname: spark-worker-2
+    network_mode: host
     depends_on:
       - spark-master
     command:
       - /bin/bash
       - -lc
       - |
-        /opt/spark/sbin/start-worker.sh spark://spark-master:7077
+        /opt/spark/sbin/start-worker.sh \
+          --host 100.127.42.127 \
+          --port 7082 \
+          --webui-port 8082 \
+          -c 12 \
+          -m 24G \
+          spark://100.127.42.127:7077
         tail -f /dev/null
     environment:
-      SPARK_WORKER_CORES: "4"
-      SPARK_WORKER_MEMORY: "4g"
-      SPARK_WORKER_WEBUI_PORT: "8081"
-      SPARK_LOCAL_DIRS: /tmp/spark-local
-    ports:
-      - "8082:8081"
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
     volumes:
-      - .:/workspace
-      - ./dataset/reference:/workspace/reference:ro
-    working_dir: /workspace
+      - ./service/spark-worker-2/local:/spark-local
+      - ./service/spark-worker-2/logs:/spark-logs
+    restart: unless-stopped
+
+  spark-worker-3:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-3
+    network_mode: host
+    depends_on:
+      - spark-master
+    command:
+      - /bin/bash
+      - -lc
+      - |
+        /opt/spark/sbin/start-worker.sh \
+          --host 100.127.42.127 \
+          --port 7083 \
+          --webui-port 8083 \
+          -c 12 \
+          -m 24G \
+          spark://100.127.42.127:7077
+        tail -f /dev/null
+    environment:
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    volumes:
+      - ./service/spark-worker-3/local:/spark-local
+      - ./service/spark-worker-3/logs:/spark-logs
+    restart: unless-stopped
+
+  spark-worker-4:
+    image: spark:4.0.1-python3
+    container_name: spark-worker-4
+    network_mode: host
+    depends_on:
+      - spark-master
+    command:
+      - /bin/bash
+      - -lc
+      - |
+        /opt/spark/sbin/start-worker.sh \
+          --host 100.127.42.127 \
+          --port 7084 \
+          --webui-port 8084 \
+          -c 12 \
+          -m 24G \
+          spark://100.127.42.127:7077
+        tail -f /dev/null
+    environment:
+      SPARK_LOCAL_DIRS: /spark-local
+      SPARK_LOG_DIR: /spark-logs
+    volumes:
+      - ./service/spark-worker-4/local:/spark-local
+      - ./service/spark-worker-4/logs:/spark-logs
+    restart: unless-stopped
 
   minio1:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: minio1
-    hostname: minio1
+    network_mode: host
+    extra_hosts:
+      - "minio1:100.127.42.127"
+      - "minio2:100.113.89.12"
     command:
       - server
+      - --address
+      - ":9100"
       - --console-address
-      - ":9001"
-      - http://minio1/data1
-      - http://minio1/data2
-      - http://minio2/data1
-      - http://minio2/data2
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - ./service/minio1/data1:/data1
-      - ./service/minio1/data2:/data2
-
-  minio2:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: minio2
-    hostname: minio2
-    command:
-      - server
-      - --console-address
-      - ":9001"
-      - http://minio1/data1
-      - http://minio1/data2
-      - http://minio2/data1
-      - http://minio2/data2
+      - ":9101"
+      - http://minio{1...2}:9100/data
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
-      - ./service/minio2/data1:/data1
-      - ./service/minio2/data2:/data2
-
-  jupyter:
-    build:
-      context: .
-      dockerfile: docker/jupyter.Dockerfile
-    container_name: jupyter
-    hostname: jupyter
-    depends_on:
-      - spark-master
-      - minio1
-    ports:
-      - "8888:8888"
-      - "4040:4040"
-      - "4041:4041"
-    volumes:
-      - .:/home/jovyan/work
-      - ./dataset/reference:/home/jovyan/work/reference:ro
+      - ./service/minio1/data:/data
+    restart: unless-stopped
