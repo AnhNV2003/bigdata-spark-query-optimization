@@ -5,34 +5,22 @@ Benchmark phục vụ chủ đề **Large-scale GPS Trajectory Processing** và 
 ## Flow
 
 1. Upload raw NYC taxi parquet lên MinIO.
-2. Profile dữ liệu để hiểu phân bố thời gian, zone, route và skew.
-3. Dựa trên profile, tạo layout benchmark.
+2. Dùng notebooks để hiểu data quality, trajectory pattern, route/zone skew và bucket distribution.
+3. Dựa trên notebook analysis, tạo layout benchmark.
 4. Chạy benchmark format, partition, bucketing và join/skew.
 5. Tổng hợp insight vào `RESULTS_SUMMARY.md`.
 
-## 1. Profile Dữ Liệu
+## 1. Data Understanding Bằng Notebooks
 
-```bash
-bash src/profile_trajectory_data.sh
-```
+Project không dùng script profile riêng nữa. Phần data understanding được thay bằng notebooks để dễ demo và giải thích trực quan:
 
-Output:
-
-```text
-results/profile/overview.csv
-results/profile/monthly_counts.csv
-results/profile/trajectory_mode_counts.csv
-results/profile/hourly_counts.csv
-results/profile/top_origin_zones.csv
-results/profile/top_destination_zones.csv
-results/profile/top_routes.csv
-results/profile/origin_bucket_distribution.csv
-results/profile/recommendations.md
-```
+- `notebooks/02_explore_taxi_data.ipynb`: kiểm tra data quality, null rate, outlier, negative fare/duration, payment anomaly và self-loop trips.
+- `notebooks/03_trajectory_exploration_story.ipynb`: phân tích trajectory model, temporal pattern, top zones, spatial skew, top routes, peak-hour bottleneck và hash bucket distribution.
 
 Mục tiêu:
 
-- biết dữ liệu tập trung ở tháng/năm nào để justify partitioning
+- biết dữ liệu đủ sạch để benchmark
+- biết pattern theo thời gian để justify partitioning
 - biết zone/route nào skew để justify join-skew benchmark
 - kiểm tra bucket distribution trước khi dùng hash bucket theo `origin_zone_id`
 

@@ -8,9 +8,9 @@ services:
     network_mode: host
     restart: always
     environment:
-      SPARK_MASTER_HOST: "100.127.42.127"
-      SPARK_MASTER_PORT: "7077"
-      SPARK_MASTER_WEBUI_PORT: "8080"
+      SPARK_MASTER_HOST: "${NODE1_IP:-127.0.0.1}"
+      SPARK_MASTER_PORT: "${SPARK_MASTER_PORT:-7077}"
+      SPARK_MASTER_WEBUI_PORT: "${SPARK_MASTER_WEBUI_PORT:-8080}"
       SPARK_LOCAL_DIRS: /spark-local
       SPARK_LOG_DIR: /spark-logs
     command: bash -c "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
@@ -25,12 +25,12 @@ services:
     depends_on:
       - spark-master
     environment:
-      SPARK_WORKER_HOST: "100.127.42.127"
-      SPARK_WORKER_PORT: "7081"
-      SPARK_WORKER_WEBUI_PORT: "8081"
-      SPARK_WORKER_CORES: "12"
-      SPARK_WORKER_MEMORY: "24G"
-      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_WORKER_HOST: "${NODE1_IP:-127.0.0.1}"
+      SPARK_WORKER_PORT: "${SPARK_WORKER1_PORT:-7081}"
+      SPARK_WORKER_WEBUI_PORT: "${SPARK_WORKER1_WEBUI_PORT:-8081}"
+      SPARK_WORKER_CORES: "${SPARK_WORKER_CORES:-12}"
+      SPARK_WORKER_MEMORY: "${SPARK_WORKER_MEMORY:-24G}"
+      SPARK_MASTER_URL: "${SPARK_MASTER:-spark://127.0.0.1:7077}"
       SPARK_LOCAL_DIRS: /spark-local
       SPARK_LOG_DIR: /spark-logs
     command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
@@ -46,12 +46,12 @@ services:
     depends_on:
       - spark-master
     environment:
-      SPARK_WORKER_HOST: "100.127.42.127"
-      SPARK_WORKER_PORT: "7082"
-      SPARK_WORKER_WEBUI_PORT: "8082"
-      SPARK_WORKER_CORES: "12"
-      SPARK_WORKER_MEMORY: "24G"
-      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_WORKER_HOST: "${NODE1_IP:-127.0.0.1}"
+      SPARK_WORKER_PORT: "${SPARK_WORKER2_PORT:-7082}"
+      SPARK_WORKER_WEBUI_PORT: "${SPARK_WORKER2_WEBUI_PORT:-8082}"
+      SPARK_WORKER_CORES: "${SPARK_WORKER_CORES:-12}"
+      SPARK_WORKER_MEMORY: "${SPARK_WORKER_MEMORY:-24G}"
+      SPARK_MASTER_URL: "${SPARK_MASTER:-spark://127.0.0.1:7077}"
       SPARK_LOCAL_DIRS: /spark-local
       SPARK_LOG_DIR: /spark-logs
     command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
@@ -67,12 +67,12 @@ services:
     depends_on:
       - spark-master
     environment:
-      SPARK_WORKER_HOST: "100.127.42.127"
-      SPARK_WORKER_PORT: "7083"
-      SPARK_WORKER_WEBUI_PORT: "8083"
-      SPARK_WORKER_CORES: "12"
-      SPARK_WORKER_MEMORY: "24G"
-      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_WORKER_HOST: "${NODE1_IP:-127.0.0.1}"
+      SPARK_WORKER_PORT: "${SPARK_WORKER3_PORT:-7083}"
+      SPARK_WORKER_WEBUI_PORT: "${SPARK_WORKER3_WEBUI_PORT:-8083}"
+      SPARK_WORKER_CORES: "${SPARK_WORKER_CORES:-12}"
+      SPARK_WORKER_MEMORY: "${SPARK_WORKER_MEMORY:-24G}"
+      SPARK_MASTER_URL: "${SPARK_MASTER:-spark://127.0.0.1:7077}"
       SPARK_LOCAL_DIRS: /spark-local
       SPARK_LOG_DIR: /spark-logs
     command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
@@ -88,12 +88,12 @@ services:
     depends_on:
       - spark-master
     environment:
-      SPARK_WORKER_HOST: "100.127.42.127"
-      SPARK_WORKER_PORT: "7084"
-      SPARK_WORKER_WEBUI_PORT: "8084"
-      SPARK_WORKER_CORES: "12"
-      SPARK_WORKER_MEMORY: "24G"
-      SPARK_MASTER_URL: "spark://100.127.42.127:7077"
+      SPARK_WORKER_HOST: "${NODE1_IP:-127.0.0.1}"
+      SPARK_WORKER_PORT: "${SPARK_WORKER4_PORT:-7084}"
+      SPARK_WORKER_WEBUI_PORT: "${SPARK_WORKER4_WEBUI_PORT:-8084}"
+      SPARK_WORKER_CORES: "${SPARK_WORKER_CORES:-12}"
+      SPARK_WORKER_MEMORY: "${SPARK_WORKER_MEMORY:-24G}"
+      SPARK_MASTER_URL: "${SPARK_MASTER:-spark://127.0.0.1:7077}"
       SPARK_LOCAL_DIRS: /spark-local
       SPARK_LOG_DIR: /spark-logs
     command: bash -c "/opt/spark/sbin/start-worker.sh $$SPARK_MASTER_URL && tail -f /dev/null"
@@ -108,14 +108,14 @@ services:
     container_name: minio1
     network_mode: host
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: "${MINIO_ACCESS_KEY:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_SECRET_KEY:-minioadmin}"
       MINIO_VOLUMES: >-
-        http://100.127.42.127:9000/data1
-        http://100.127.42.127:9000/data2
-        http://100.127.42.127:9002/data1
-        http://100.127.42.127:9002/data2
-    command: server --address :9000 --console-address :9001
+        http://${NODE1_IP:-127.0.0.1}:${MINIO_API_PORT:-9000}/data1
+        http://${NODE1_IP:-127.0.0.1}:${MINIO_API_PORT:-9000}/data2
+        http://${NODE1_IP:-127.0.0.1}:${MINIO2_API_PORT:-9002}/data1
+        http://${NODE1_IP:-127.0.0.1}:${MINIO2_API_PORT:-9002}/data2
+    command: server --address :${MINIO_API_PORT:-9000} --console-address :${MINIO_CONSOLE_PORT:-9001}
     volumes:
       - ./service/minio1/data1:/data1
       - ./service/minio1/data2:/data2
@@ -126,14 +126,14 @@ services:
     container_name: minio2
     network_mode: host
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: "${MINIO_ACCESS_KEY:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_SECRET_KEY:-minioadmin}"
       MINIO_VOLUMES: >-
-        http://100.127.42.127:9000/data1
-        http://100.127.42.127:9000/data2
-        http://100.127.42.127:9002/data1
-        http://100.127.42.127:9002/data2
-    command: server --address :9002 --console-address :9003
+        http://${NODE1_IP:-127.0.0.1}:${MINIO_API_PORT:-9000}/data1
+        http://${NODE1_IP:-127.0.0.1}:${MINIO_API_PORT:-9000}/data2
+        http://${NODE1_IP:-127.0.0.1}:${MINIO2_API_PORT:-9002}/data1
+        http://${NODE1_IP:-127.0.0.1}:${MINIO2_API_PORT:-9002}/data2
+    command: server --address :${MINIO2_API_PORT:-9002} --console-address :${MINIO2_CONSOLE_PORT:-9003}
     volumes:
       - ./service/minio2/data1:/data1
       - ./service/minio2/data2:/data2

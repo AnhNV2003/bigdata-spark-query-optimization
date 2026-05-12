@@ -1,25 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-/home/phd/bigdata-spark-query-optimization}"
-PYTHON_BIN="${PYTHON_BIN:-$PROJECT_ROOT/venv/bin/python}"
-if [ ! -x "$PYTHON_BIN" ]; then
-  PYTHON_BIN="${PYTHON_BIN_FALLBACK:-python3.12}"
-fi
-if [ -z "${JAVA_HOME:-}" ] && [ -x "$HOME/.local/share/jdks/temurin-21/bin/java" ]; then
-  export JAVA_HOME="$HOME/.local/share/jdks/temurin-21"
-  export PATH="$JAVA_HOME/bin:$PATH"
-fi
-
-export PYTHONPATH="$PROJECT_ROOT/src:${PYTHONPATH:-}"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
 RESULTS_ROOT="${RESULTS_ROOT:-$PROJECT_ROOT/results}"
 WINDOW_START="${WINDOW_START:-2025-01-01 00:00:00}"
 WINDOW_END="${WINDOW_END:-2026-01-01 00:00:00}"
 MINIO_BUCKET="${MINIO_BUCKET:-taxi-data}"
-MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://100.127.42.127:9100}"
-SPARK_MASTER="${SPARK_MASTER:-spark://100.127.42.127:7077}"
-SPARK_DRIVER_HOST="${SPARK_DRIVER_HOST:-100.127.42.127}"
+MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://${NODE1_IP:-127.0.0.1}:${MINIO_API_PORT:-9000}}"
+SPARK_MASTER="${SPARK_MASTER:-spark://${NODE1_IP:-127.0.0.1}:${SPARK_MASTER_PORT:-7077}}"
+SPARK_DRIVER_HOST="${SPARK_DRIVER_HOST:-${NODE1_IP:-127.0.0.1}}"
 ZONE_LOOKUP_PATH="${ZONE_LOOKUP_PATH:-$PROJECT_ROOT/dataset/reference/taxi_zone_lookup.csv}"
 
 mkdir -p \

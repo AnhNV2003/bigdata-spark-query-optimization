@@ -26,6 +26,10 @@ venv/bin/pip install pandas requests pyarrow minio 'pyspark==4.0.1' matplotlib n
 docker compose -f docker-compose.node1.yaml up -d
 ```
 
+All host-specific values are loaded from `.env`. Start from `.env.example`,
+then edit `NODE1_IP`, `NODE2_IP`, `PROJECT_ROOT`, `SPARK_MASTER`,
+`SPARK_DRIVER_HOST` and `MINIO_ENDPOINT` for your machine.
+
 ### 3. Fix permissions cho Spark log directories
 
 Docker tạo thư mục log với quyền root — cần chmod để Spark process bên trong container write được.
@@ -41,7 +45,8 @@ docker compose -f docker-compose.node1.yaml restart \
 Verify cluster OK:
 
 ```bash
-curl http://100.127.42.127:8080/json/ | python3 -c "
+source .env
+curl http://$NODE1_IP:$SPARK_MASTER_WEBUI_PORT/json/ | python3 -c "
 import json,sys; d=json.load(sys.stdin)
 print('Workers:', len(d['workers']), '| Apps:', len(d['activeapps']))
 "
@@ -108,7 +113,7 @@ Lần đầu chạy Spark, các packages (`hadoop-aws`, `spark-avro`...) đượ
 ```bash
 JAVA_HOME=$HOME/.local/share/jdks/temurin-21 PYTHONPATH=src venv/bin/python -c "
 from test_read_minio_parquet import build_spark_session
-spark = build_spark_session(app_name='prefetch', endpoint='http://100.127.42.127:9000', access_key='minioadmin', secret_key='minioadmin')
+spark = build_spark_session(app_name='prefetch', endpoint='$MINIO_ENDPOINT', access_key='$MINIO_ACCESS_KEY', secret_key='$MINIO_SECRET_KEY')
 print('Packages ready:', spark.version); spark.stop()
 "
 ```

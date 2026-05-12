@@ -4,7 +4,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Node 1 (100.127.42.127) — Primary compute + storage               │
+│  Node 1 ($NODE1_IP) — Primary compute + storage                    │
 │                                                                      │
 │  ┌──────────────┐  ┌──────────────────────────────────────────────┐  │
 │  │ Spark Master │  │            Spark Workers                     │  │
@@ -16,7 +16,7 @@
 │         │                          │                                 │
 │         │          ┌───────────────▼──────────────┐                  │
 │         │          │ MinIO Object Storage         │                  │
-│         │          │  API :9100  Console :9101    │                  │
+│         │          │  API :$MINIO_API_PORT        │                  │
 │         │          │  Bucket: taxi-data           │                  │
 │         │          │   ├── 2025/         (raw)    │                  │
 │         │          │   ├── bench/     (layouts)   │                  │
@@ -35,11 +35,11 @@
 └──────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Node 2 (100.113.89.12) — Secondary (optional, via Tailscale)       │
+│  Node 2 ($NODE2_IP) — Secondary (optional, via Tailscale)           │
 │                                                                      │
 │  ┌────────────────────┐  ┌────────────────────────────┐             │
 │  │ Spark Worker       │  │ MinIO (distributed peer)   │             │
-│  │  :7084  6c / 6 GB  │  │  :9100                     │             │
+│  │  worker config from .env │  │ MinIO config from .env │            │
 │  └────────────────────┘  └────────────────────────────┘             │
 └──────────────────────────────────────────────────────────────────────┘
         ▲                           ▲
@@ -97,7 +97,7 @@ MinIO chạy **standalone mode** trên node 1.
 
 **Tại sao standalone thay vì distributed?**
 
-Project được thiết kế cho 2-node distributed MinIO (`docker-compose.yaml` có `http://minio{1...2}:9100/data`). Tuy nhiên, node 2 (100.113.89.12) không phải lúc nào cũng online vì kết nối qua Tailscale VPN phụ thuộc vào mạng. Để đảm bảo benchmark reproducible và không bị gián đoạn, production config (`docker-compose.node1.yaml`) dùng MinIO standalone trên node 1.
+Project được thiết kế cho 2-node distributed MinIO (`docker-compose.yaml` dùng `http://minio{1...2}:$MINIO_DISTRIBUTED_API_PORT/data`). Tuy nhiên, node 2 (`$NODE2_IP`) không phải lúc nào cũng online vì kết nối qua Tailscale VPN phụ thuộc vào mạng. Để đảm bảo benchmark reproducible và không bị gián đoạn, production config (`docker-compose.node1.yaml`) dùng MinIO standalone trên node 1.
 
 MinIO standalone vẫn là S3-compatible object storage — Spark truy cập qua `s3a://` protocol giống hệt distributed mode. Sự khác biệt chỉ ở replication (standalone không replicate data sang node khác), không ảnh hưởng đến benchmark query performance.
 
@@ -110,12 +110,12 @@ MinIO standalone vẫn là S3-compatible object storage — Spark truy cập qua
 ### Endpoint
 
 ```text
-Spark master:  spark://100.127.42.127:7077
-Spark UI:      http://100.127.42.127:8080
-MinIO API:     http://100.127.42.127:9000
-MinIO Console: http://100.127.42.127:9001  (minio1)
-               http://100.127.42.127:9003  (minio2)
-Jupyter Lab:   http://100.127.42.127:8888
+Spark master:  $SPARK_MASTER
+Spark UI:      http://$NODE1_IP:$SPARK_MASTER_WEBUI_PORT
+MinIO API:     $MINIO_ENDPOINT
+MinIO Console: http://$NODE1_IP:$MINIO_CONSOLE_PORT  (minio1)
+               http://$NODE1_IP:$MINIO2_CONSOLE_PORT (minio2)
+Jupyter Lab:   http://$NODE1_IP:8888
 ```
 
 ## Ý Nghĩa Với Trajectory Processing
@@ -129,12 +129,13 @@ Jupyter Lab:   http://100.127.42.127:8888
 ```bash
 # Cluster status
 docker compose -f docker-compose.node1.yaml ps
-curl http://100.127.42.127:8080/json/
+source .env
+curl http://$NODE1_IP:$SPARK_MASTER_WEBUI_PORT/json/
 
 # MinIO health
-curl -I http://100.127.42.127:9100/minio/health/ready
+curl -I $MINIO_ENDPOINT/minio/health/ready
 
 # Node 2 (khi online)
-ssh vanh@100.113.89.12 'cd /home/vanh/data/projects/bigdata && docker compose -f docker-compose.node2.yaml ps'
-curl -I http://100.113.89.12:9100/minio/health/ready
+ssh <user>@$NODE2_IP "cd $PROJECT_ROOT && docker compose -f docker-compose.node2.yaml ps"
+curl -I http://$NODE2_IP:$MINIO_DISTRIBUTED_API_PORT/minio/health/ready
 ```

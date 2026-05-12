@@ -4,7 +4,10 @@
 
 Tài liệu này tổng hợp kết quả benchmark trên dữ liệu NYC taxi trajectory năm 2025 (~48.7 triệu trips).
 
-Trước khi đọc kết quả benchmark, nên xem profile trong `results/profile/` để hiểu đặc điểm dữ liệu: phân bố theo tháng, giờ, zone, route và bucket distribution.
+Trước khi đọc kết quả benchmark, nên xem notebooks data understanding để hiểu đặc điểm dữ liệu:
+
+- `notebooks/02_explore_taxi_data.ipynb`: data quality, null rate, outlier và anomaly.
+- `notebooks/03_trajectory_exploration_story.ipynb`: phân bố theo thời gian, zone, route, spatial skew và bucket distribution.
 
 ## 1. Format benchmark
 

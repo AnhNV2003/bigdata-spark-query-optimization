@@ -10,14 +10,14 @@ services:
       - -lc
       - |
         /opt/spark/sbin/start-master.sh \
-          --host 100.127.42.127 \
-          --port 7077 \
-          --webui-port 8080
+          --host ${NODE1_IP:-127.0.0.1} \
+          --port ${SPARK_MASTER_PORT:-7077} \
+          --webui-port ${SPARK_MASTER_WEBUI_PORT:-8080}
         tail -f /dev/null
     environment:
-      SPARK_MASTER_HOST: "100.127.42.127"
-      SPARK_MASTER_PORT: "7077"
-      SPARK_MASTER_WEBUI_PORT: "8080"
+      SPARK_MASTER_HOST: "${NODE1_IP:-127.0.0.1}"
+      SPARK_MASTER_PORT: "${SPARK_MASTER_PORT:-7077}"
+      SPARK_MASTER_WEBUI_PORT: "${SPARK_MASTER_WEBUI_PORT:-8080}"
       SPARK_LOCAL_DIRS: /spark-local
       SPARK_LOG_DIR: /spark-logs
     volumes:
@@ -36,12 +36,12 @@ services:
       - -lc
       - |
         /opt/spark/sbin/start-worker.sh \
-          --host 100.127.42.127 \
-          --port 7081 \
-          --webui-port 8081 \
-          -c 12 \
-          -m 24G \
-          spark://100.127.42.127:7077
+          --host ${NODE1_IP:-127.0.0.1} \
+          --port ${SPARK_WORKER1_PORT:-7081} \
+          --webui-port ${SPARK_WORKER1_WEBUI_PORT:-8081} \
+          -c ${SPARK_WORKER_CORES:-12} \
+          -m ${SPARK_WORKER_MEMORY:-24G} \
+          ${SPARK_MASTER:-spark://127.0.0.1:7077}
         tail -f /dev/null
     environment:
       SPARK_LOCAL_DIRS: /spark-local
@@ -62,12 +62,12 @@ services:
       - -lc
       - |
         /opt/spark/sbin/start-worker.sh \
-          --host 100.127.42.127 \
-          --port 7082 \
-          --webui-port 8082 \
-          -c 12 \
-          -m 24G \
-          spark://100.127.42.127:7077
+          --host ${NODE1_IP:-127.0.0.1} \
+          --port ${SPARK_WORKER2_PORT:-7082} \
+          --webui-port ${SPARK_WORKER2_WEBUI_PORT:-8082} \
+          -c ${SPARK_WORKER_CORES:-12} \
+          -m ${SPARK_WORKER_MEMORY:-24G} \
+          ${SPARK_MASTER:-spark://127.0.0.1:7077}
         tail -f /dev/null
     environment:
       SPARK_LOCAL_DIRS: /spark-local
@@ -88,12 +88,12 @@ services:
       - -lc
       - |
         /opt/spark/sbin/start-worker.sh \
-          --host 100.127.42.127 \
-          --port 7083 \
-          --webui-port 8083 \
-          -c 12 \
-          -m 24G \
-          spark://100.127.42.127:7077
+          --host ${NODE1_IP:-127.0.0.1} \
+          --port ${SPARK_WORKER3_PORT:-7083} \
+          --webui-port ${SPARK_WORKER3_WEBUI_PORT:-8083} \
+          -c ${SPARK_WORKER_CORES:-12} \
+          -m ${SPARK_WORKER_MEMORY:-24G} \
+          ${SPARK_MASTER:-spark://127.0.0.1:7077}
         tail -f /dev/null
     environment:
       SPARK_LOCAL_DIRS: /spark-local
@@ -114,12 +114,12 @@ services:
       - -lc
       - |
         /opt/spark/sbin/start-worker.sh \
-          --host 100.127.42.127 \
-          --port 7084 \
-          --webui-port 8084 \
-          -c 12 \
-          -m 24G \
-          spark://100.127.42.127:7077
+          --host ${NODE1_IP:-127.0.0.1} \
+          --port ${SPARK_WORKER4_PORT:-7084} \
+          --webui-port ${SPARK_WORKER4_WEBUI_PORT:-8084} \
+          -c ${SPARK_WORKER_CORES:-12} \
+          -m ${SPARK_WORKER_MEMORY:-24G} \
+          ${SPARK_MASTER:-spark://127.0.0.1:7077}
         tail -f /dev/null
     environment:
       SPARK_LOCAL_DIRS: /spark-local
@@ -134,18 +134,18 @@ services:
     container_name: minio1
     network_mode: host
     extra_hosts:
-      - "minio1:100.127.42.127"
-      - "minio2:100.113.89.12"
+      - "minio1:${NODE1_IP:-127.0.0.1}"
+      - "minio2:${NODE2_IP:-127.0.0.1}"
     command:
       - server
       - --address
-      - ":9100"
+      - ":${MINIO_DISTRIBUTED_API_PORT:-9100}"
       - --console-address
-      - ":9101"
-      - http://minio{1...2}:9100/data
+      - ":${MINIO_DISTRIBUTED_CONSOLE_PORT:-9101}"
+      - http://minio{1...2}:${MINIO_DISTRIBUTED_API_PORT:-9100}/data
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: "${MINIO_ACCESS_KEY:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_SECRET_KEY:-minioadmin}"
     volumes:
       - ./service/minio1/data:/data
     restart: unless-stopped
