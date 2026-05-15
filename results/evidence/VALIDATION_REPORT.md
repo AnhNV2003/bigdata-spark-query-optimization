@@ -1,0 +1,24 @@
+# Benchmark Evidence Validation
+
+Generated at: `2026-05-15 00:19:04 UTC`
+
+| Check                         | Status | Detail                                                                                                                       |
+| ----------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Input format_parquet          | PASS   | CSV loaded                                                                                                                   |
+| Input format_orc              | PASS   | CSV loaded                                                                                                                   |
+| Input format_avro             | PASS   | CSV loaded                                                                                                                   |
+| Input partition_raw           | PASS   | CSV loaded                                                                                                                   |
+| Input partitioned             | PASS   | CSV loaded                                                                                                                   |
+| Input partition_month_raw     | PASS   | CSV loaded                                                                                                                   |
+| Input partition_month         | PASS   | CSV loaded                                                                                                                   |
+| Input bucketing_raw           | PASS   | CSV loaded                                                                                                                   |
+| Input bucketing_bucketed      | PASS   | CSV loaded                                                                                                                   |
+| Input join_skew               | PASS   | CSV loaded                                                                                                                   |
+| Input join_skew_aqe           | PASS   | CSV loaded                                                                                                                   |
+| Input join_skew_large         | PASS   | CSV loaded                                                                                                                   |
+| Partition runtime claim       | PASS   | Historical full-year partition runtimes are mixed, but one-month pruning evidence is now used as the final partition result. |
+| Partition scan metadata       | PASS   | Present in CSV                                                                                                               |
+| One-month partition evidence  | PASS   | partition_month includes runtime and scanned directory counts                                                                |
+| AQE on/off evidence           | PASS   | AQE enabled and disabled runs are present                                                                                    |
+| Large non-broadcast skew join | PASS   | SortMerge and salted non-broadcast skew joins are present                                                                    |
+| Generated charts              | PASS   | 10 chart files in results/evidence/charts                                                                                    |

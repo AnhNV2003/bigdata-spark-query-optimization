@@ -91,3 +91,7 @@ run_benchmark \
   --layout raw \
   --dataset-variant trajectory_parquet_join_baseline \
   --output "$RESULTS_ROOT/join_skew/trajectory_join_skew_benchmark.csv"
+
+"$PYTHON_BIN" "$PROJECT_ROOT/src/generate_evidence.py" \
+  --results-root "$RESULTS_ROOT" \
+  --update-docs

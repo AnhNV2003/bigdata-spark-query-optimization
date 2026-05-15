@@ -1,0 +1,5 @@
+query_id,query_name,Parquet,ORC,Avro,Parquet_vs_Avro,ORC_vs_Avro
+Q01,trajectory_projection_scan,0.974728,0.719249,9.761128,10.0x,13.6x
+Q03,vendor_origin_zone_aggregation,1.211678,0.954985,10.206027,8.4x,10.7x
+Q06,route_ranking_window,0.811063,0.822111,10.247936,12.6x,12.5x
+Q07,origin_destination_volume,0.471017,0.519502,9.893548,21.0x,19.0x

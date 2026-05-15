@@ -226,6 +226,68 @@ def collect_stage_metrics(
     }
 
 
+def _hadoop_path_exists(spark: SparkSession, path_text: str) -> bool:
+    path = spark._jvm.org.apache.hadoop.fs.Path(path_text)
+    filesystem = path.getFileSystem(spark._jsc.hadoopConfiguration())
+    return bool(filesystem.exists(path))
+
+
+def _count_partition_dirs(spark: SparkSession, root_path_text: str, prefix: str) -> int:
+    root_path = spark._jvm.org.apache.hadoop.fs.Path(root_path_text)
+    filesystem = root_path.getFileSystem(spark._jsc.hadoopConfiguration())
+    if not filesystem.exists(root_path):
+        return 0
+
+    count = 0
+    for status in filesystem.listStatus(root_path):
+        if status.isDirectory() and status.getPath().getName().startswith(prefix):
+            count += 1
+    return count
+
+
+def _count_year_month_partition_dirs(spark: SparkSession, root_path_text: str) -> int:
+    root_path = spark._jvm.org.apache.hadoop.fs.Path(root_path_text)
+    filesystem = root_path.getFileSystem(spark._jsc.hadoopConfiguration())
+    if not filesystem.exists(root_path):
+        return 0
+
+    count = 0
+    for year_status in filesystem.listStatus(root_path):
+        if not year_status.isDirectory() or not year_status.getPath().getName().startswith("trip_year="):
+            continue
+        for month_status in filesystem.listStatus(year_status.getPath()):
+            if month_status.isDirectory() and month_status.getPath().getName().startswith("trip_month="):
+                count += 1
+    return count
+
+
+def estimate_partitions_scanned(
+    spark: SparkSession,
+    source_path: str,
+    layout: str,
+    window_year: int,
+    window_month: int,
+    bucket_value: int,
+) -> str:
+    root_path = source_path.rstrip("/")
+    try:
+        if layout == "partitioned_year_month":
+            total = _count_year_month_partition_dirs(spark, root_path)
+            scanned_path = f"{root_path}/trip_year={window_year}/trip_month={window_month}"
+            scanned = 1 if _hadoop_path_exists(spark, scanned_path) else 0
+            return f"{scanned}/{total}" if total else ""
+
+        if layout == "bucketed_origin_zone_hash":
+            total = _count_partition_dirs(spark, root_path, "origin_zone_bucket=")
+            scanned_path = f"{root_path}/origin_zone_bucket={bucket_value}"
+            scanned = 1 if _hadoop_path_exists(spark, scanned_path) else 0
+            return f"{scanned}/{total}" if total else ""
+    except Exception:
+        return ""
+
+    return ""
+
+
 def run_query_once(
     spark: SparkSession,
     query_id: str,
@@ -394,6 +456,14 @@ def main() -> None:
         "bucket_zone_id": bucket_zone_id,
         "bucket_value": bucket_value,
     }
+    partitions_scanned = estimate_partitions_scanned(
+        spark=spark,
+        source_path=source_path,
+        layout=args.layout,
+        window_year=time_window["window_year"],
+        window_month=time_window["window_month"],
+        bucket_value=bucket_value,
+    )
     output_path = resolve_output_path(args.output)
 
     fieldnames = [
@@ -485,7 +555,7 @@ def main() -> None:
                     "shuffle_read_mb": run_result["shuffle_read_mb"],
                     "shuffle_write_mb": run_result["shuffle_write_mb"],
                     "spill_mb": run_result["spill_mb"],
-                    "partitions_scanned": "",
+                    "partitions_scanned": partitions_scanned,
                     "uses_broadcast_join": plan_hints["uses_broadcast_join"],
                     "uses_partition_pruning": plan_hints["uses_partition_pruning"],
                     "window_start": args.window_start,

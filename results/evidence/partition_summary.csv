@@ -1,0 +1,5 @@
+query_id,query_name,raw_sec,partitioned_sec,uses_partition_pruning,partitions_scanned,result
+Q02,time_filter_partition_pruning,0.526412,0.36458,True,,30.7% faster
+Q05,daily_zone_flow_summary,0.538514,0.823003,True,,52.8% slower
+Q06,route_ranking_window,0.837594,1.509605,True,,80.2% slower
+Q07,origin_destination_volume,0.508325,0.689716,True,,35.7% slower

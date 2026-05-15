@@ -1,0 +1,11 @@
+# Topic 5 Requirement Audit
+
+Generated at: `2026-05-15 00:19:04 UTC`
+
+| Requirement                             | Status    | Evidence                                                                                                                                                                                                |
+| --------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compare Parquet, ORC, Avro              | Fulfilled | Format CSVs, runtime chart, physical plans with Parquet/ORC batched scans and Avro non-batched scan.                                                                                                    |
+| Optimize partitioning for data skipping | Fulfilled | One-month partition evidence reports scanned partition directories and PartitionFilters. Historical full-year CSVs remain mixed, so they are treated as context rather than the primary pruning result. |
+| Optimize bucketing for data skipping    | Fulfilled | Hash-bucket directory pruning improves targeted origin-zone lookup and join queries.                                                                                                                    |
+| Address data skew in distributed joins  | Fulfilled | Small-dimension joins are compared, plus supplemental AQE on/off and large non-broadcast fact-to-fact SortMerge vs salted skew joins.                                                                   |
+| Quantitative evaluation with charts     | Fulfilled | Generated markdown summaries, CSV tables, and PNG charts under results/evidence.                                                                                                                        |

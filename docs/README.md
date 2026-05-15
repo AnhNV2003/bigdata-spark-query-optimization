@@ -82,12 +82,27 @@ bash src/prepare_benchmark_datasets.sh
 bash src/run_benchmark.sh
 ```
 
+Script này chạy format, partition, bucketing, join/skew benchmark rồi sinh evidence tự động vào `results/evidence/`.
+
+Nếu chỉ muốn kiểm tra riêng partition pruning với cửa sổ thời gian đúng một tháng:
+
+```bash
+bash src/run_partition_window_benchmark.sh
+```
+
+Nếu đã có CSV và chỉ muốn tạo lại bảng/charts/evidence:
+
+```bash
+bash src/generate_evidence.sh
+```
+
 ### 9. Xem kết quả
 
 - `results/format/`
 - `results/partition/`
 - `results/bucketing/`
 - `results/join_skew/`
+- `results/evidence/`
 
 ## Notebooks
 

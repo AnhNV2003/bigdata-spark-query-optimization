@@ -1,0 +1,5 @@
+query_id,strategy,median_runtime_sec,shuffle_read_mb,shuffle_write_mb,spill_mb,uses_broadcast_join
+Q04,Skew aggregation,1.138799,0.49,0.49,0.0,False
+Q08,SortMerge join,4.981555,25.85,25.85,731.2,False
+Q09,Broadcast join,1.145827,0.91,0.91,0.0,True
+Q10,Salted join,3.675295,0.91,0.91,0.0,True

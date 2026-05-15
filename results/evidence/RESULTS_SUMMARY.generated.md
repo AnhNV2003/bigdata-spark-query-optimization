@@ -1,6 +1,6 @@
 # Topic 5 Results Summary
 
-Generated at: `2026-05-14 22:38:28 UTC`
+Generated at: `2026-05-15 00:19:04 UTC`
 
 This file is generated from the CSV files under `results/`. Do not hand-edit benchmark claims without regenerating evidence.
 

@@ -8,7 +8,7 @@ Benchmark phục vụ chủ đề **Large-scale GPS Trajectory Processing** và 
 2. Dùng notebooks để hiểu data quality, trajectory pattern, route/zone skew và bucket distribution.
 3. Dựa trên notebook analysis, tạo layout benchmark.
 4. Chạy benchmark format, partition, bucketing và join/skew.
-5. Tổng hợp insight vào `RESULTS_SUMMARY.md`.
+5. Sinh evidence vào `results/evidence/` và đồng bộ `docs/RESULTS_SUMMARY.md`.
 
 ## 1. Data Understanding Bằng Notebooks
 
@@ -47,6 +47,28 @@ bench/reference/taxi_zone_dim
 bash src/run_benchmark.sh
 ```
 
+Script này cũng chạy `src/generate_evidence.py` ở cuối để tạo:
+
+```text
+results/evidence/RESULTS_SUMMARY.generated.md
+results/evidence/TOPIC5_REQUIREMENT_AUDIT.md
+results/evidence/VALIDATION_REPORT.md
+results/evidence/*.csv
+results/evidence/charts/*.png
+```
+
+Nếu chỉ cần sinh lại evidence từ CSV đã có:
+
+```bash
+bash src/generate_evidence.sh
+```
+
+Nếu chỉ cần rerun partition benchmark với cửa sổ một tháng rõ ràng:
+
+```bash
+bash src/run_partition_window_benchmark.sh
+```
+
 Nhóm query:
 
 - `format`: Q01, Q03, Q06, Q07
@@ -74,3 +96,10 @@ results/join_skew/
 ```
 
 `EXPLAIN FORMATTED` nằm trong thư mục `plans/` cạnh từng file kết quả.
+
+## 6. Lưu Ý Diễn Giải
+
+- Không claim partitioning luôn nhanh hơn nếu CSV hiện tại không chứng minh điều đó.
+- `PartitionFilters` trong physical plan chứng minh Spark có partition pruning, còn runtime có thể vẫn chậm hơn nếu overhead metadata, shuffle, sort hoặc window function lớn hơn phần scan tiết kiệm được.
+- Layout `bucketed_origin_zone_hash` là hash-partitioned directory layout theo `origin_zone_bucket`; nó chứng minh data skipping theo spatial key, nhưng không phải Spark catalog `bucketBy` để loại bỏ shuffle join.
+- `Broadcast join` là chiến lược đúng cho `taxi_zone_dim` nhỏ. `Salted join` nên được giải thích là kỹ thuật xử lý skew cho trường hợp không thể broadcast dimension lớn.

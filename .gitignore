@@ -47,6 +47,11 @@ results/**
 !results/bucketing/.gitkeep
 !results/join_skew/
 !results/join_skew/.gitkeep
+!results/evidence/
+!results/evidence/*.csv
+!results/evidence/*.md
+!results/evidence/charts/
+!results/evidence/charts/*.png
 
 # Claude Code working directory
 .claude/

@@ -1,0 +1,4 @@
+query_id,query_name,raw_sec,partitioned_sec,uses_partition_pruning,partitions_scanned,result
+QP01,monthly_count_pruning,0.091243,0.054374,True,1/12,40.4% faster
+QP02,monthly_zone_flow,0.14239,0.059528,True,1/12,58.2% faster
+QP03,monthly_od_volume,0.235992,0.082152,True,1/12,65.2% faster
